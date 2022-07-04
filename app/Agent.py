@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-import json, os
+import json, os, time
 from azure.storage.queue import QueueClient
 from azure.identity import DefaultAzureCredential
 from wakeonlan import send_magic_packet
@@ -50,15 +50,14 @@ def main():
     queue_client = QueueClient.from_queue_url(queue_url="https://{}.queue.core.windows.net/{}".format(initial_agent_config['storage_account_name'], initial_agent_config['queue_name']), credential=credential)
     agent = Agent(initial_agent_config, queue_client)
 
-    last = datetime.now()
     while True:
-        if datetime.now() - last > timedelta(seconds = initial_agent_config['poll_interval']):
-            last = datetime.now()
-            try:
-                messages = agent.get_messages()
-                agent.process_messages(messages)
-            except Exception as e:
-                logger.error(e)
+        try:
+            messages = agent.get_messages()
+            agent.process_messages(messages)
+        except Exception as e:
+            logger.error(e)
+        
+        time.sleep(agent.agent_config['poll_interval'])
 
 if __name__ == "__main__":
     main()
