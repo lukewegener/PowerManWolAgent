@@ -15,6 +15,11 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
+    - name: Write cert.pem file
+      env:
+        CERT_PEM: ${{ secrets.CERT_PEM }}
+      run: echo "$CERT_PEM" | ${HOME}/cert.pem
+    
     - name: Build the Docker image
       run: docker build . --tag powermanwolagent --label solution=powermanwolagent
       
@@ -33,4 +38,14 @@ jobs:
     
     - name: Create the macvlan network
       run: docker network create -d macvlan --gateway 192.168.3.1 --subnet 192.168.3.0/24 --ip-range 192.168.3.240/29 -o parent=vlan_private powermanwolagent_net --label solution=powermanwolagent
+      
+    - name: Start the container
+      env:
+        POLL_INTERVAL: ${{ secrets.POLL_INTERVAL }}
+        STORAGE_ACCOUNT_NAME: ${{ secrets.STORAGE_ACCOUNT_NAME }}
+        QUEUE_NAME: ${{ secrets.QUEUE_NAME }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      run: docker run -d -e POLL_INTERVAL -e STORAGE_ACCOUNT_NAME -e QUEUE_NAME -e AZURE_TENANT_ID -e AZURE_CLIENT_ID --name powermanwolagent --network powermanwolagent_net --dns 192.168.3.1 --label solution=powermanwolagent powermanwolagent
+        
       
