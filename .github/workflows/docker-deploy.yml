@@ -1,0 +1,36 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: [self-hosted, linux, x64, home]
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Build the Docker image
+      run: docker build . --tag powermanwolagent --label solution=powermanwolagent
+      
+  deploy:
+  
+    runs-on: [self-hosted, linux, x64, home]
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Stop the existing container
+      run: docker stop powermanwolagent
+    
+    - name: Prune existing network
+      run: docker network prune --filter 'label=solution=powermanwolagent' --force
+    
+    - name: Create the macvlan network
+      run: docker network create -d macvlan --gateway 192.168.3.1 --subnet 192.168.3.0/24 --ip-range 192.168.3.240/29 -o parent=vlan_private powermanwolagent_net --label solution=powermanwolagent
+      
